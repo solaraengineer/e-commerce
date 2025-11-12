@@ -1,0 +1,361 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #0066FF;
+            --light-blue: #E6F0FF;
+            --deep-black: #000000;
+            --soft-black: #1A1A1A;
+            --gray: #6B7280;
+            --light-gray: #F3F4F6;
+            --white: #FFFFFF;
+            --border: #E5E7EB;
+            --success-green: #10B981;
+            --success-light: #D1FAE5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: var(--light-gray);
+            color: var(--deep-black);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .confirmation-container {
+            max-width: 700px;
+            width: 100%;
+            animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Success Icon */
+        .success-icon-container {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--success-green);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-size: 40px;
+            animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s backwards;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--deep-black);
+            margin: 24px 0 12px 0;
+            letter-spacing: -1px;
+        }
+
+        .success-subtitle {
+            font-size: 16px;
+            color: var(--gray);
+            margin-bottom: 8px;
+        }
+
+        .order-number {
+            font-size: 18px;
+            color: var(--primary-blue);
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        /* Main Card */
+        .confirmation-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Order Summary Header */
+        .order-header {
+            background: var(--light-gray);
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .order-header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--deep-black);
+        }
+
+        /* Items List */
+        .items-list {
+            padding: 32px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--deep-black);
+            margin-bottom: 6px;
+        }
+
+        .item-quantity {
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        .item-price {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--deep-black);
+        }
+
+        /* Total Section */
+        .order-total-section {
+            padding: 24px 32px;
+            background: var(--light-gray);
+            border-top: 2px solid var(--border);
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .total-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .total-label {
+            font-size: 15px;
+            color: var(--gray);
+        }
+
+        .total-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--deep-black);
+        }
+
+        .final-total {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .final-total .total-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--deep-black);
+        }
+
+        .final-total .total-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            padding: 32px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+
+        .btn-primary {
+            background: var(--deep-black);
+            color: var(--white);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--soft-black);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--deep-black);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--light-gray);
+            transform: translateY(-2px);
+        }
+
+        /* Footer Note */
+        .confirmation-footer {
+            text-align: center;
+            margin-top: 32px;
+            padding: 24px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .footer-text {
+            font-size: 14px;
+            color: var(--gray);
+            line-height: 1.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .items-list {
+                padding: 24px 20px;
+            }
+
+            .order-header {
+                padding: 20px 20px;
+            }
+
+            .order-total-section {
+                padding: 20px 20px;
+            }
+
+            .action-buttons {
+                padding: 24px 20px;
+                flex-direction: column;
+            }
+
+            .success-title {
+                font-size: 26px;
+            }
+
+            .order-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="confirmation-container">
+        <!-- Success Icon & Message -->
+        <div class="success-icon-container">
+            <div class="success-icon">✓</div>
+            <h1 class="success-title">Order Confirmed!</h1>
+            <p class="success-subtitle">Thank you for your purchase</p>
+            <p class="order-number">Order #{{ random_id }}</p>
+        </div>
+
+        <!-- Order Details Card -->
+        <div class="confirmation-card">
+            <!-- Header -->
+            <div class="order-header">
+                <h2 class="order-header-title">Order Summary</h2>
+            </div>
+
+            <!-- Items List -->
+            <div class="items-list">
+                {% for item in items %}
+                <div class="order-item">
+                    <div class="item-details">
+                        <div class="item-name">{{ item.item_id }}</div>
+                        <div class="item-quantity">Quantity: 1</div>
+                    </div>
+                    <div class="item-price">${{ item.price }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Total Section -->
+            <div class="order-total-section">
+                <div class="total-row final-total">
+                    <span class="total-label">Total</span>
+                    <span class="total-value">${{ total }}</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <a href="/" class="btn btn-primary">Continue Shopping</a>
+                <a href="/orders" class="btn btn-secondary">View Orders</a>
+            </div>
+        </div>
+
+        <!-- Footer Note -->
+        <div class="confirmation-footer">
+            <p class="footer-text">
+                A confirmation email has been sent to your email address.<br>
+                You can track your order status in your account dashboard.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
