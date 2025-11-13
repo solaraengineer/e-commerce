@@ -311,7 +311,7 @@
             <div class="success-icon">✓</div>
             <h1 class="success-title">Order Confirmed!</h1>
             <p class="success-subtitle">Thank you for your purchase</p>
-            <p class="order-number">Order #{{ random_id }}</p>
+            <p class="order-number">Order {{ random_id }}</p>
         </div>
 
         <!-- Order Details Card -->
@@ -323,14 +323,18 @@
 
             <!-- Items List -->
             <div class="items-list">
-                {% for item in items %}
-                <div class="order-item">
-                    <div class="item-details">
-                        <div class="item-name">{{ item.item_id }}</div>
-                        <div class="item-quantity">Quantity: 1</div>
-                    </div>
-                    <div class="item-price">${{ item.price }}</div>
-                </div>
+                {% for order in items %}
+                    {% with item_list=order.item|split:", " %}
+                        {% for item_name in item_list %}
+                        <div class="order-item">
+                            <div class="item-details">
+                                <div class="item-name">{{ item_name }}</div>
+                                <div class="item-quantity">Quantity: 1</div>
+                            </div>
+                            <div class="item-price">Included</div>
+                        </div>
+                        {% endfor %}
+                    {% endwith %}
                 {% endfor %}
             </div>
 
@@ -358,4 +362,301 @@
         </div>
     </div>
 </body>
+<script>
+    // Example JavaScript for handling form validation via API
+
+// Helper function to get CSRF token
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Generic function to show error messages
+function showError(field, message) {
+  const errorDiv = document.getElementById(`${field}-error`);
+  if (errorDiv) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+  }
+
+  const inputField = document.getElementById(field);
+  if (inputField) {
+    inputField.classList.add('error');
+  }
+}
+
+function clearError(field) {
+  const errorDiv = document.getElementById(`${field}-error`);
+  if (errorDiv) {
+    errorDiv.style.display = 'none';
+  }
+
+  const inputField = document.getElementById(field);
+  if (inputField) {
+    inputField.classList.remove('error');
+  }
+}
+
+// ===== LOGIN VALIDATION =====
+const loginForm = document.getElementById('login-form');
+if (loginForm) {
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+      const response = await fetch('/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        window.location.href = data.redirect;
+      } else {
+        showError('password', data.message);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      showError('password', 'An error occurred. Please try again.');
+    }
+  });
+}
+
+// ===== REGISTER VALIDATION =====
+const registerForm = document.getElementById('register-form');
+if (registerForm) {
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm-password')?.value;
+
+    // Client-side validation
+    if (password !== confirmPassword) {
+      showError('confirm-password', 'Passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch('/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        window.location.href = data.redirect;
+      } else {
+        if (data.field) {
+          showError(data.field, data.message);
+        } else if (data.errors) {
+          // Handle multiple errors
+          Object.keys(data.errors).forEach(field => {
+            showError(field, data.errors[field][0]);
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      showError('username', 'An error occurred. Please try again.');
+    }
+  });
+}
+
+// ===== CHECKOUT VALIDATION =====
+const checkoutContactForm = document.getElementById('contact-form');
+const checkoutShippingForm = document.getElementById('shipping-form');
+
+// Validate contact form on blur
+if (checkoutContactForm) {
+  const contactInputs = checkoutContactForm.querySelectorAll('input');
+
+  contactInputs.forEach(input => {
+    input.addEventListener('blur', async () => {
+      const formData = new FormData(checkoutContactForm);
+      const data = Object.fromEntries(formData);
+      data.form_type = 'contact';
+
+      try {
+        const response = await fetch('/api/validate-checkout/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken'),
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'error' && result.errors) {
+          Object.keys(result.errors).forEach(field => {
+            showError(field, result.errors[field][0]);
+          });
+        } else {
+          // Clear errors if validation passes
+          contactInputs.forEach(inp => clearError(inp.id));
+        }
+      } catch (error) {
+        console.error('Validation error:', error);
+      }
+    });
+  });
+}
+
+// Validate shipping form on blur
+if (checkoutShippingForm) {
+  const shippingInputs = checkoutShippingForm.querySelectorAll('input');
+
+  shippingInputs.forEach(input => {
+    input.addEventListener('blur', async () => {
+      const formData = new FormData(checkoutShippingForm);
+      const data = Object.fromEntries(formData);
+      data.form_type = 'shipping';
+
+      try {
+        const response = await fetch('/api/validate-checkout/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken'),
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'error' && result.errors) {
+          Object.keys(result.errors).forEach(field => {
+            showError(field, result.errors[field][0]);
+          });
+        } else {
+          // Clear errors if validation passes
+          shippingInputs.forEach(inp => clearError(inp.id));
+        }
+      } catch (error) {
+        console.error('Validation error:', error);
+      }
+    });
+  });
+}
+
+// ===== ADD TO CART VALIDATION =====
+document.querySelectorAll('.add-to-cart').forEach(button => {
+  button.addEventListener('click', async () => {
+    const productId = button.id;
+    const priceElement = document.getElementById(`price-${productId}`);
+
+    if (!priceElement) {
+      console.error('Price element not found');
+      return;
+    }
+
+    const price = parseFloat(priceElement.textContent.replace('$', ''));
+
+    if (isNaN(price) || price <= 0) {
+      alert('Invalid price');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/addcart/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+          product: productId,
+          price: price,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        // Show success message or update cart count
+        console.log('Item added to cart');
+        // You could show a toast notification here
+      } else {
+        alert(data.message || 'Failed to add item to cart');
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('An error occurred. Please try again.');
+    }
+  });
+});
+
+// ===== REAL-TIME INPUT VALIDATION =====
+// Example: validate phone number format
+const phoneInput = document.getElementById('phone_number');
+if (phoneInput) {
+  phoneInput.addEventListener('input', (e) => {
+    const value = e.target.value;
+    const phoneRegex = /^\d{0,15}$/;  // Only digits, max 15
+
+    if (!phoneRegex.test(value)) {
+      showError('phone_number', 'Phone number should only contain digits');
+    } else {
+      clearError('phone_number');
+    }
+  });
+}
+
+// Example: validate zipcode format
+const zipcodeInput = document.getElementById('zipcode');
+if (zipcodeInput) {
+  zipcodeInput.addEventListener('input', (e) => {
+    const value = e.target.value;
+    const zipcodeRegex = /^[\d\-\s]{0,20}$/;
+
+    if (!zipcodeRegex.test(value)) {
+      showError('zipcode', 'Invalid zipcode format');
+    } else {
+      clearError('zipcode');
+    }
+  });
+}
+
+// Example: validate required fields on blur
+document.querySelectorAll('input[required]').forEach(input => {
+  input.addEventListener('blur', () => {
+    if (!input.value.trim()) {
+      showError(input.id, 'This field is required');
+    } else {
+      clearError(input.id);
+    }
+  });
+});
+
+</script>
 </html>
