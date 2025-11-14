@@ -15,6 +15,7 @@ urlpatterns = [
     path('login', views.loginn, name='login'),
     path('checkout/', views.checkout, name='checkout'),
     path('conf/', views.conf, name='conf'),
+    path('settings', views.settings, name='settings'),
 
     # Auth
     path('register', views.register, name='register'),

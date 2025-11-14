@@ -433,101 +433,57 @@ function getCookie(name) {
     return cookieValue;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('.main-form');
+function renderCart() {
     const cartItemsDiv = document.getElementById('cart-items');
     const cartTotalSpan = document.getElementById('cart-total');
 
-
     fetch('/api/checkout/', {
         headers: {
-            'X-Requested-With': 'XMLHttpRequest',
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
     .then(res => res.json())
     .then(data => {
         if (data.items && data.items.length > 0) {
             cartItemsDiv.innerHTML = data.items.map(item => `
-                <div class="cart-item">
+                <div class="cart-item" id="cart-item-${item.id}">
                     <span class="item-name">${item.name}</span>
                     <span class="item-price">$${item.price.toFixed(2)}</span>
+                    <button onclick="deleteItem(${item.id})">Delete</button>
                 </div>
             `).join('');
             cartTotalSpan.textContent = `$${data.total.toFixed(2)}`;
         } else {
             cartItemsDiv.innerHTML = '<p style="color: var(--gray);">Your cart is empty</p>';
+            cartTotalSpan.textContent = '$0.00';
         }
-    }).catch(err => console.error('Error loading cart:', err));
+    })
+    .catch(err => console.error('Error loading cart:', err));
+}
 
-
-    function clearErrors() {
-        document.querySelectorAll('.error-message').forEach(el => el.remove());
-        document.querySelectorAll('input').forEach(el => el.style.borderColor = 'var(--border)');
-    }
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        clearErrors();
-
-        const contactData = {
-            form_type: 'contact',
-            first_name: document.querySelector('input[name="first_name"]').value,
-            last_name: document.querySelector('input[name="last_name"]').value,
-            phone_number: document.querySelector('input[name="phone_number"]').value,
-        };
-
-        const shippingData = {
-            form_type: 'shipping',
-            Address: document.querySelector('input[name="Address"]').value,
-            city: document.querySelector('input[name="city"]').value,
-            state: document.querySelector('input[name="state"]').value,
-            zipcode: document.querySelector('input[name="zipcode"]').value,
-            country: document.querySelector('input[name="country"]').value,
-        };
-
-        let hasError = false;
-
-        async function validateSection(data) {
-            try {
-                const res = await fetch('/api/validate-checkout/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': getCookie('csrftoken'),
-                    },
-                    body: JSON.stringify(data),
-                });
-
-                const result = await res.json();
-
-                if (result.status === 'error' && result.errors) {
-                    hasError = true;
-                    Object.entries(result.errors).forEach(([field, msg]) => {
-                        const fieldInput = document.querySelector(`input[name="${field}"]`);
-                        if (fieldInput) {
-                            fieldInput.style.borderColor = '#EF4444';
-                            const err = document.createElement('div');
-                            err.className = 'error-message';
-                            err.style.color = '#EF4444';
-                            err.style.fontSize = '12px';
-                            err.style.marginTop = '4px';
-                            err.textContent = msg[0];
-                            fieldInput.parentElement.appendChild(err);
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Validation error:', error);
-            }
+function deleteItem(id) {
+    fetch(`/api/delone/${id}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "X-Requested-With": "XMLHttpRequest"
         }
-
-        await validateSection(contactData);
-        await validateSection(shippingData);
-
-        if (!hasError) form.submit();
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            console.log("Item deleted:", data.message);
+            renderCart();
+        } else {
+            console.error("Deletion failed:", data.message);
+        }
+    })
+    .catch(err => {
+        console.error("Network error:", err);
     });
-});
+}
+
+document.addEventListener('DOMContentLoaded', renderCart);
 </script>
 </body>
 </html>

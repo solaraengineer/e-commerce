@@ -10,7 +10,7 @@ import json
 import random
 import string
 
-from logic.forms import RegisterForm, LoginForm, CheckContactForm, CheckShipping
+from logic.forms import RegisterForm, LoginForm, CheckContactForm, CheckShipping, UpdateDataForm
 from logic.models import User, CartItem, Orders
 
 
@@ -18,13 +18,49 @@ def conf(request):
     return render(request, 'conf.html')
 
 
-def home(request):
-    orders = Orders.objects.filter(user_id=request.user.id).order_by('-date')
+@login_required(login_url='login')
+def settings(request):
+    user = request.user
 
-    return render(request, 'index.html', {
-        'orders': orders,
-        'user': request.user
-    })
+    if request.method == 'POST':
+        form = UpdateDataForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+
+            new_username = cd.get("username")
+            if new_username and new_username != user.username:
+                if User.objects.filter(username=new_username).exclude(id=user.id).exists():
+                    messages.error(request, 'Username already taken')
+                    return render(request, 'settings.html', {'update_form': form})
+                user.username = new_username
+
+            password = cd.get("password")
+            if password:
+                user.set_password(password)
+                auth.update_session_auth_hash(request, user)
+
+            user.save()
+            messages.success(request, 'Settings updated successfully')
+            return redirect('home')
+    else:
+        form = UpdateDataForm(initial={'username': user.username})
+
+    return render(request, 'settings.html', {'update_form': form})
+
+
+def home(request):
+    """Homepage - shows orders if logged in"""
+    if request.user.is_authenticated:
+        orders = Orders.objects.filter(user_id=str(request.user.id)).order_by('-date')
+        return render(request, 'index.html', {
+            'orders': orders,
+            'user': request.user
+        })
+    else:
+        return render(request, 'index.html', {
+            'orders': [],
+            'user': None
+        })
 
 
 def reg(request):
@@ -88,13 +124,11 @@ def buy(request):
         contact_form = CheckContactForm(request.POST)
         shipping_form = CheckShipping(request.POST)
 
-
         if contact_form.is_valid() and shipping_form.is_valid():
             try:
                 with transaction.atomic():
                     contact_data = contact_form.cleaned_data
                     shipping_data = shipping_form.cleaned_data
-
 
                     user = request.user
                     user.first_name = contact_data['first_name']
@@ -107,12 +141,8 @@ def buy(request):
                     user.country = shipping_data['country']
                     user.save()
 
-
                     random_id = '#' + ''.join(random.choices(string.ascii_letters + string.digits, k=11))
-
-
                     total = sum(float(c.price) for c in cart)
-
 
                     order = Orders.objects.create(
                         user_id=str(user.id),
@@ -122,7 +152,6 @@ def buy(request):
                         status='Paid'
                     )
                     cart.delete()
-
 
                 return render(request, 'conf.html', {
                     'random_id': random_id,
@@ -147,13 +176,11 @@ def buy(request):
                 'errors': errors
             })
 
-
     return redirect('checkout')
 
 
 @login_required(login_url='login')
 def checkout_data(request):
-
     cart = CartItem.objects.filter(user=request.user).select_related('user')
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -205,7 +232,6 @@ def register(request):
                             'field': 'username'
                         }, status=400)
 
-
                     user = User.objects.create_user(username=username, password=password)
                     auth.login(request, user)
                     request.session['username'] = username
@@ -233,7 +259,6 @@ def register(request):
                     'message': 'Registration failed'
                 }, status=500)
 
-    # Regular form submission
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         cd = form.cleaned_data
@@ -298,7 +323,6 @@ def login(request):
                     'message': 'Login failed'
                 }, status=500)
 
-    # Regular form submission
     form = LoginForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         cd = form.cleaned_data
@@ -331,7 +355,6 @@ def addcart(request):
         product_id = data.get('product')
         price = data.get('price')
 
-        # Validate input
         if not product_id:
             return JsonResponse({
                 'status': 'error',
@@ -343,6 +366,7 @@ def addcart(request):
                 'status': 'error',
                 'message': 'Price is required'
             }, status=400)
+
         try:
             price = float(price)
             if price <= 0:
@@ -395,7 +419,6 @@ def cleancart(request):
             'status': 'error',
             'message': 'Failed to clear cart'
         }, status=500)
-
 
 
 @login_required(login_url='login')
