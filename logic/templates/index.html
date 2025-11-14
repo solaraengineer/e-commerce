@@ -546,12 +546,14 @@
             </a>
                     <button id="clear">Clear cart</button>
         </nav>
-        <form action="/logout/" method="POST" style="margin-top: auto;">
+           <form
+                   {% csrf_token %}
+                action="/logout/" method="POST" style="margin-top: auto;">
     <button type="submit" class="nav-item" style="all: unset; cursor: pointer;">
         <span class="nav-icon">→</span>
         Logout
     </button>
-</form>
+          </form>
     </aside>
 
     <!-- Main Content -->
@@ -645,16 +647,22 @@
                 <a href="/login">login</a>
 
                 <div class="orders-table">
-                    <div class="table-header">
-                        <div>Order ID</div>
-                        <div>Items</div>
-                        <div>Total</div>
-                        <div>Date</div>
-                    </div>
-                    <div class="table-row">
+    <div class="table-header">
+        <div>Order ID</div>
+        <div>Items</div>
+        <div>Total</div>
+        <div>Date</div>
+    </div>
 
-                        </div>
-                    </div>
+    {% for order in orders %}
+    <div class="table-row">
+        <div>{{ order.order_id }}</div>
+        <div>{{ order.item }}</div>
+        <div>{{ order.total }}</div>
+        <div>{{ order.date }}</div>
+    </div>
+    {% endfor %}
+</div>
             </section>
         </div>
     </main>

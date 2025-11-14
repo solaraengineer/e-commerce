@@ -19,7 +19,12 @@ def conf(request):
 
 
 def home(request):
-    return render(request, 'index.html')
+    orders = Orders.objects.filter(user_id=request.user.id).order_by('-date')
+
+    return render(request, 'index.html', {
+        'orders': orders,
+        'user': request.user
+    })
 
 
 def reg(request):
@@ -116,8 +121,6 @@ def buy(request):
                         order_id=random_id,
                         status='Paid'
                     )
-
-
                     cart.delete()
 
 
@@ -353,7 +356,6 @@ def addcart(request):
                 'message': 'Invalid price format'
             }, status=400)
 
-        # Create cart item
         CartItem.objects.create(
             user=request.user,
             item_id=product_id,

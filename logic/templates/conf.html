@@ -14,7 +14,6 @@
 
         :root {
             --primary-blue: #0066FF;
-            --light-blue: #E6F0FF;
             --deep-black: #000000;
             --soft-black: #1A1A1A;
             --gray: #6B7280;
@@ -22,7 +21,6 @@
             --white: #FFFFFF;
             --border: #E5E7EB;
             --success-green: #10B981;
-            --success-light: #D1FAE5;
         }
 
         body {
@@ -40,21 +38,8 @@
         .confirmation-container {
             max-width: 700px;
             width: 100%;
-            animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Success Icon */
         .success-icon-container {
             text-align: center;
             margin-bottom: 32px;
@@ -70,19 +55,7 @@
             justify-content: center;
             color: var(--white);
             font-size: 40px;
-            animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s backwards;
             box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-        }
-
-        @keyframes scaleIn {
-            from {
-                transform: scale(0);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
         }
 
         .success-title {
@@ -96,7 +69,6 @@
         .success-subtitle {
             font-size: 16px;
             color: var(--gray);
-            margin-bottom: 8px;
         }
 
         .order-number {
@@ -106,7 +78,6 @@
             margin-top: 8px;
         }
 
-        /* Main Card */
         .confirmation-card {
             background: var(--white);
             border: 1px solid var(--border);
@@ -115,7 +86,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        /* Order Summary Header */
         .order-header {
             background: var(--light-gray);
             padding: 24px 32px;
@@ -125,10 +95,8 @@
         .order-header-title {
             font-size: 18px;
             font-weight: 600;
-            color: var(--deep-black);
         }
 
-        /* Items List */
         .items-list {
             padding: 32px;
         }
@@ -136,7 +104,6 @@
         .order-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding: 20px 0;
             border-bottom: 1px solid var(--border);
         }
@@ -145,15 +112,9 @@
             border-bottom: none;
         }
 
-        .item-details {
-            flex: 1;
-        }
-
         .item-name {
             font-size: 16px;
             font-weight: 600;
-            color: var(--deep-black);
-            margin-bottom: 6px;
         }
 
         .item-quantity {
@@ -164,57 +125,30 @@
         .item-price {
             font-size: 18px;
             font-weight: 600;
-            color: var(--deep-black);
         }
 
-        /* Total Section */
         .order-total-section {
             padding: 24px 32px;
             background: var(--light-gray);
             border-top: 2px solid var(--border);
         }
 
-        .total-row {
+        .final-total {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .total-row:last-child {
-            margin-bottom: 0;
         }
 
         .total-label {
-            font-size: 15px;
-            color: var(--gray);
+            font-size: 18px;
+            font-weight: 600;
         }
 
         .total-value {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--deep-black);
-        }
-
-        .final-total {
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border);
-        }
-
-        .final-total .total-label {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--deep-black);
-        }
-
-        .final-total .total-value {
             font-size: 24px;
             font-weight: 700;
             color: var(--primary-blue);
         }
 
-        /* Action Buttons */
         .action-buttons {
             padding: 32px;
             display: flex;
@@ -227,23 +161,18 @@
             border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: center;
             text-decoration: none;
-            display: block;
+            transition: all 0.2s;
         }
 
         .btn-primary {
             background: var(--deep-black);
             color: var(--white);
-            border: none;
         }
 
         .btn-primary:hover {
             background: var(--soft-black);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
 
         .btn-secondary {
@@ -254,10 +183,8 @@
 
         .btn-secondary:hover {
             background: var(--light-gray);
-            transform: translateY(-2px);
         }
 
-        /* Footer Note */
         .confirmation-footer {
             text-align: center;
             margin-top: 32px;
@@ -270,43 +197,11 @@
         .footer-text {
             font-size: 14px;
             color: var(--gray);
-            line-height: 1.6;
-        }
-
-        /* Responsive */
-        @media (max-width: 640px) {
-            .items-list {
-                padding: 24px 20px;
-            }
-
-            .order-header {
-                padding: 20px 20px;
-            }
-
-            .order-total-section {
-                padding: 20px 20px;
-            }
-
-            .action-buttons {
-                padding: 24px 20px;
-                flex-direction: column;
-            }
-
-            .success-title {
-                font-size: 26px;
-            }
-
-            .order-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="confirmation-container">
-        <!-- Success Icon & Message -->
         <div class="success-icon-container">
             <div class="success-icon">✓</div>
             <h1 class="success-title">Order Confirmed!</h1>
@@ -314,46 +209,38 @@
             <p class="order-number">Order {{ random_id }}</p>
         </div>
 
-        <!-- Order Details Card -->
         <div class="confirmation-card">
-            <!-- Header -->
             <div class="order-header">
                 <h2 class="order-header-title">Order Summary</h2>
             </div>
 
-            <!-- Items List -->
             <div class="items-list">
                 {% for order in items %}
-                    {% with item_list=order.item|split:", " %}
-                        {% for item_name in item_list %}
-                        <div class="order-item">
-                            <div class="item-details">
-                                <div class="item-name">{{ item_name }}</div>
-                                <div class="item-quantity">Quantity: 1</div>
-                            </div>
-                            <div class="item-price">Included</div>
+                    {% for item_name in order.item.split %}
+                    <div class="order-item">
+                        <div>
+                            <div class="item-name">{{ item_name }}</div>
+                            <div class="item-quantity">Quantity: 1</div>
                         </div>
-                        {% endfor %}
-                    {% endwith %}
+                        <div class="item-price">Included</div>
+                    </div>
+                    {% endfor %}
                 {% endfor %}
             </div>
 
-            <!-- Total Section -->
             <div class="order-total-section">
-                <div class="total-row final-total">
+                <div class="final-total">
                     <span class="total-label">Total</span>
                     <span class="total-value">${{ total }}</span>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="action-buttons">
                 <a href="/" class="btn btn-primary">Continue Shopping</a>
                 <a href="/orders" class="btn btn-secondary">View Orders</a>
             </div>
         </div>
 
-        <!-- Footer Note -->
         <div class="confirmation-footer">
             <p class="footer-text">
                 A confirmation email has been sent to your email address.<br>
@@ -362,301 +249,4 @@
         </div>
     </div>
 </body>
-<script>
-    // Example JavaScript for handling form validation via API
-
-// Helper function to get CSRF token
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== "") {
-    const cookies = document.cookie.split(";");
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === name + "=") {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
-
-// Generic function to show error messages
-function showError(field, message) {
-  const errorDiv = document.getElementById(`${field}-error`);
-  if (errorDiv) {
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-  }
-
-  const inputField = document.getElementById(field);
-  if (inputField) {
-    inputField.classList.add('error');
-  }
-}
-
-function clearError(field) {
-  const errorDiv = document.getElementById(`${field}-error`);
-  if (errorDiv) {
-    errorDiv.style.display = 'none';
-  }
-
-  const inputField = document.getElementById(field);
-  if (inputField) {
-    inputField.classList.remove('error');
-  }
-}
-
-// ===== LOGIN VALIDATION =====
-const loginForm = document.getElementById('login-form');
-if (loginForm) {
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-
-    try {
-      const response = await fetch('/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': getCookie('csrftoken'),
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        window.location.href = data.redirect;
-      } else {
-        showError('password', data.message);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      showError('password', 'An error occurred. Please try again.');
-    }
-  });
-}
-
-// ===== REGISTER VALIDATION =====
-const registerForm = document.getElementById('register-form');
-if (registerForm) {
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const confirmPassword = document.getElementById('confirm-password')?.value;
-
-    // Client-side validation
-    if (password !== confirmPassword) {
-      showError('confirm-password', 'Passwords do not match');
-      return;
-    }
-
-    try {
-      const response = await fetch('/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': getCookie('csrftoken'),
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        window.location.href = data.redirect;
-      } else {
-        if (data.field) {
-          showError(data.field, data.message);
-        } else if (data.errors) {
-          // Handle multiple errors
-          Object.keys(data.errors).forEach(field => {
-            showError(field, data.errors[field][0]);
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      showError('username', 'An error occurred. Please try again.');
-    }
-  });
-}
-
-// ===== CHECKOUT VALIDATION =====
-const checkoutContactForm = document.getElementById('contact-form');
-const checkoutShippingForm = document.getElementById('shipping-form');
-
-// Validate contact form on blur
-if (checkoutContactForm) {
-  const contactInputs = checkoutContactForm.querySelectorAll('input');
-
-  contactInputs.forEach(input => {
-    input.addEventListener('blur', async () => {
-      const formData = new FormData(checkoutContactForm);
-      const data = Object.fromEntries(formData);
-      data.form_type = 'contact';
-
-      try {
-        const response = await fetch('/api/validate-checkout/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': getCookie('csrftoken'),
-          },
-          body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
-
-        if (result.status === 'error' && result.errors) {
-          Object.keys(result.errors).forEach(field => {
-            showError(field, result.errors[field][0]);
-          });
-        } else {
-          // Clear errors if validation passes
-          contactInputs.forEach(inp => clearError(inp.id));
-        }
-      } catch (error) {
-        console.error('Validation error:', error);
-      }
-    });
-  });
-}
-
-// Validate shipping form on blur
-if (checkoutShippingForm) {
-  const shippingInputs = checkoutShippingForm.querySelectorAll('input');
-
-  shippingInputs.forEach(input => {
-    input.addEventListener('blur', async () => {
-      const formData = new FormData(checkoutShippingForm);
-      const data = Object.fromEntries(formData);
-      data.form_type = 'shipping';
-
-      try {
-        const response = await fetch('/api/validate-checkout/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': getCookie('csrftoken'),
-          },
-          body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
-
-        if (result.status === 'error' && result.errors) {
-          Object.keys(result.errors).forEach(field => {
-            showError(field, result.errors[field][0]);
-          });
-        } else {
-          // Clear errors if validation passes
-          shippingInputs.forEach(inp => clearError(inp.id));
-        }
-      } catch (error) {
-        console.error('Validation error:', error);
-      }
-    });
-  });
-}
-
-// ===== ADD TO CART VALIDATION =====
-document.querySelectorAll('.add-to-cart').forEach(button => {
-  button.addEventListener('click', async () => {
-    const productId = button.id;
-    const priceElement = document.getElementById(`price-${productId}`);
-
-    if (!priceElement) {
-      console.error('Price element not found');
-      return;
-    }
-
-    const price = parseFloat(priceElement.textContent.replace('$', ''));
-
-    if (isNaN(price) || price <= 0) {
-      alert('Invalid price');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/addcart/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
-        },
-        body: JSON.stringify({
-          product: productId,
-          price: price,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        // Show success message or update cart count
-        console.log('Item added to cart');
-        // You could show a toast notification here
-      } else {
-        alert(data.message || 'Failed to add item to cart');
-      }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      alert('An error occurred. Please try again.');
-    }
-  });
-});
-
-// ===== REAL-TIME INPUT VALIDATION =====
-// Example: validate phone number format
-const phoneInput = document.getElementById('phone_number');
-if (phoneInput) {
-  phoneInput.addEventListener('input', (e) => {
-    const value = e.target.value;
-    const phoneRegex = /^\d{0,15}$/;  // Only digits, max 15
-
-    if (!phoneRegex.test(value)) {
-      showError('phone_number', 'Phone number should only contain digits');
-    } else {
-      clearError('phone_number');
-    }
-  });
-}
-
-// Example: validate zipcode format
-const zipcodeInput = document.getElementById('zipcode');
-if (zipcodeInput) {
-  zipcodeInput.addEventListener('input', (e) => {
-    const value = e.target.value;
-    const zipcodeRegex = /^[\d\-\s]{0,20}$/;
-
-    if (!zipcodeRegex.test(value)) {
-      showError('zipcode', 'Invalid zipcode format');
-    } else {
-      clearError('zipcode');
-    }
-  });
-}
-
-// Example: validate required fields on blur
-document.querySelectorAll('input[required]').forEach(input => {
-  input.addEventListener('blur', () => {
-    if (!input.value.trim()) {
-      showError(input.id, 'This field is required');
-    } else {
-      clearError(input.id);
-    }
-  });
-});
-
-</script>
 </html>
