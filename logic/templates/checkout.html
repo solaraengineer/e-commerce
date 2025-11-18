@@ -231,6 +231,22 @@
             font-weight: 600;
         }
 
+        .delete-btn {
+            padding: 6px 12px;
+            background: #EF4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: #DC2626;
+        }
+
         .cart-total {
             display: flex;
             justify-content: space-between;
@@ -254,6 +270,15 @@
 
         .checkout-btn:hover {
             opacity: 0.9;
+        }
+
+        .qty-btn:hover {
+            background: var(--light-blue) !important;
+        }
+
+        .qty-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -319,6 +344,10 @@
                         <div class="form-group full-width">
                             <label class="form-label">Phone Number</label>
                             {{ check_form.phone_number }}
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label">Email</label>
+                            {{ check_form.email }}
                         </div>
                     </div>
                 </div>
@@ -418,6 +447,10 @@
     </div>
 
 <script>
+// Rate limiting
+let lastAction = 0;
+const ACTION_COOLDOWN = 500; // 500ms cooldown between actions
+
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== "") {
@@ -433,6 +466,15 @@ function getCookie(name) {
     return cookieValue;
 }
 
+function canPerformAction() {
+    const now = Date.now();
+    if (now - lastAction < ACTION_COOLDOWN) {
+        return false;
+    }
+    lastAction = now;
+    return true;
+}
+
 function renderCart() {
     const cartItemsDiv = document.getElementById('cart-items');
     const cartTotalSpan = document.getElementById('cart-total');
@@ -445,11 +487,36 @@ function renderCart() {
     .then(res => res.json())
     .then(data => {
         if (data.items && data.items.length > 0) {
-            cartItemsDiv.innerHTML = data.items.map(item => `
-                <div class="cart-item" id="cart-item-${item.id}">
-                    <span class="item-name">${item.name}</span>
-                    <span class="item-price">$${item.price.toFixed(2)}</span>
-                    <button onclick="deleteItem(${item.id})">Delete</button>
+            // Group items by name and count quantity
+            const groupedItems = {};
+            data.items.forEach(item => {
+                if (!groupedItems[item.name]) {
+                    groupedItems[item.name] = {
+                        name: item.name,
+                        price: item.price,
+                        quantity: 0,
+                        ids: []
+                    };
+                }
+                groupedItems[item.name].quantity++;
+                groupedItems[item.name].ids.push(item.id);
+            });
+
+            cartItemsDiv.innerHTML = Object.values(groupedItems).map(item => `
+                <div class="cart-item" id="cart-item-${item.name.replace(/\s/g, '-')}">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span class="item-name">${item.name}</span>
+                        <span style="font-size: 13px; color: var(--gray);">$${item.price.toFixed(2)} each</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; background: var(--light-gray); border-radius: 8px; padding: 4px;">
+                            <button type="button" class="qty-btn" onclick="decreaseQuantity('${item.name.replace(/'/g, "\\'")}', ${item.ids[0]})" style="width: 28px; height: 28px; border: none; background: var(--white); border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px;">−</button>
+                            <span style="min-width: 24px; text-align: center; font-weight: 600;">${item.quantity}</span>
+                            <button type="button" class="qty-btn" onclick="increaseQuantity('${item.name.replace(/'/g, "\\'")}', ${item.price})" style="width: 28px; height: 28px; border: none; background: var(--white); border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 16px;">+</button>
+                        </div>
+                        <span class="item-price" style="min-width: 60px; text-align: right;">$${(item.price * item.quantity).toFixed(2)}</span>
+                        <button type="button" class="delete-btn" onclick="deleteAllItems('${item.name.replace(/'/g, "\\'")}', ${JSON.stringify(item.ids)})">Remove</button>
+                    </div>
                 </div>
             `).join('');
             cartTotalSpan.textContent = `$${data.total.toFixed(2)}`;
@@ -461,29 +528,78 @@ function renderCart() {
     .catch(err => console.error('Error loading cart:', err));
 }
 
-function deleteItem(id) {
-    fetch(`/api/delone/${id}/`, {
-        method: "POST",
+function increaseQuantity(productName, price) {
+    if (!canPerformAction()) {
+        console.log('Action cooldown active');
+        return;
+    }
+
+    fetch('/api/addcart/', {
+        method: 'POST',
         headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            "X-Requested-With": "XMLHttpRequest"
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            product: productName,
+            price: price
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            renderCart();
+        } else {
+            console.error('Failed to add item:', data.message);
+        }
+    })
+    .catch(err => console.error('Error adding item:', err));
+}
+
+function decreaseQuantity(productName, itemId) {
+    if (!canPerformAction()) {
+        console.log('Action cooldown active');
+        return;
+    }
+
+    fetch(`/api/delone/${itemId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
         }
     })
     .then(res => res.json())
     .then(data => {
-        if (data.status === "success") {
-            console.log("Item deleted:", data.message);
+        if (data.status === 'success') {
             renderCart();
         } else {
-            console.error("Deletion failed:", data.message);
+            console.error('Failed to remove item:', data.message);
         }
     })
-    .catch(err => {
-        console.error("Network error:", err);
-    });
+    .catch(err => console.error('Error removing item:', err));
+}
+
+function deleteAllItems(productName, itemIds) {
+    if (!confirm(`Remove all ${productName} from cart?`)) {
+        return;
+    }
+
+    // Delete all items of this type
+    Promise.all(itemIds.map(id =>
+        fetch(`/api/delone/${id}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+    ))
+    .then(() => renderCart())
+    .catch(err => console.error('Error deleting items:', err));
 }
 
 document.addEventListener('DOMContentLoaded', renderCart);
 </script>
 </body>
-</html>
+</html>git

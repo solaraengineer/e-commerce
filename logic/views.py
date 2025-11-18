@@ -1,14 +1,22 @@
+
+from email import message
 from django.contrib import messages, auth
 from django.contrib.auth.decorators import login_required
+from django.contrib.messages.storage import session
 from django.shortcuts import render, redirect
+import traceback
 from django.views.decorators.csrf import csrf_exempt
 from django_ratelimit.decorators import ratelimit
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
 import json
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 import random
 import string
+from collections import Counter
 
 from logic.forms import RegisterForm, LoginForm, CheckContactForm, CheckShipping, UpdateDataForm
 from logic.models import User, CartItem, Orders
@@ -49,17 +57,16 @@ def settings(request):
 
 
 def home(request):
-    """Homepage - shows orders if logged in"""
     if request.user.is_authenticated:
         orders = Orders.objects.filter(user_id=str(request.user.id)).order_by('-date')
         return render(request, 'index.html', {
+            'user': request.user,
             'orders': orders,
-            'user': request.user
         })
     else:
         return render(request, 'index.html', {
             'orders': [],
-            'user': None
+            'user': request.user
         })
 
 
@@ -98,7 +105,6 @@ def delone(request, id):
             'message': 'Failed to delete item'
         }, status=500)
 
-
 @login_required(login_url='login')
 def buy(request):
     cart = CartItem.objects.filter(user=request.user).select_related('user')
@@ -133,6 +139,7 @@ def buy(request):
                     user = request.user
                     user.first_name = contact_data['first_name']
                     user.last_name = contact_data['last_name']
+                    user.email = contact_data['email']
                     user.phone_number = contact_data['phone_number']
                     user.address = shipping_data['Address']
                     user.city = shipping_data['city']
@@ -144,13 +151,31 @@ def buy(request):
                     random_id = '#' + ''.join(random.choices(string.ascii_letters + string.digits, k=11))
                     total = sum(float(c.price) for c in cart)
 
+
+                    item_counts = Counter([c.item_id for c in cart])
+                    items_formatted = ', '.join([f"{item} x{count}" for item, count in item_counts.items()])
+
                     order = Orders.objects.create(
                         user_id=str(user.id),
-                        item=', '.join([c.item_id for c in cart]),
+                        item=items_formatted,
                         total=total,
                         order_id=random_id,
                         status='Paid'
                     )
+
+                    send_order_confirmation(
+                        user=request.user,
+                        order_id=random_id,
+                        items=items_formatted,
+                        total=total
+                    )
+                    orderadmin(
+                        user=request.user,
+                        order_id=random_id,
+                        items=items_formatted,
+                        total=total
+                    )
+
                     cart.delete()
 
                 return render(request, 'conf.html', {
@@ -254,10 +279,12 @@ def register(request):
                     'message': 'Invalid JSON data'
                 }, status=400)
             except Exception as e:
+                print(f"REGISTER ERROR: {e}")
                 return JsonResponse({
                     'status': 'error',
-                    'message': 'Registration failed'
+                    'message': 'Registration failed',
                 }, status=500)
+
 
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -280,7 +307,7 @@ def register(request):
 @ratelimit(key='ip', rate='5/m', block=True)
 def login(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        if request.method == 'POST':
+     if request.method == 'POST':
             try:
                 data = json.loads(request.body)
                 form = LoginForm(data)
@@ -323,7 +350,7 @@ def login(request):
                     'message': 'Login failed'
                 }, status=500)
 
-    form = LoginForm(request.POST or None)
+    form = LoginForm
     if request.method == "POST" and form.is_valid():
         cd = form.cleaned_data
         user = User.objects.filter(username=cd['username']).first()
@@ -342,6 +369,8 @@ def login(request):
 def logout_view(request):
     if request.method == 'POST':
         auth.logout(request)
+        request.session.pop('username', None)
+        request.session.flush()
         messages.success(request, 'Logged out successfully')
         return redirect('home')
     return redirect('home')
@@ -420,6 +449,17 @@ def cleancart(request):
             'message': 'Failed to clear cart'
         }, status=500)
 
+@transaction.atomic
+def delacc(request):
+    if request.method == 'POST':
+     user = User.objects.filter(username=request.user).first()
+    if user:
+     user.delete()
+    else:
+        return JsonResponse({
+            'status': 'error',
+        })
+    return redirect('login')
 
 @login_required(login_url='login')
 @require_POST
@@ -469,3 +509,49 @@ def validate_checkout(request):
             'status': 'error',
             'message': 'Validation failed'
         }, status=500)
+
+
+def send_order_confirmation(user, order_id, items, total):
+
+
+    html_message = render_to_string('EMAILCONF.html', {
+        'user': user,
+        'order_id': order_id,
+        'items': items,
+        'total': total,
+        'site_url': 'https://fwaeh.cloud'
+    })
+
+    plain_message = strip_tags(html_message)
+
+    send_mail(
+        subject='Order Confirmation',
+        message=plain_message,
+        from_email='solaradeveloper@gmail.com',
+        recipient_list=[user.email],
+        html_message=html_message,
+        fail_silently=False,
+    )
+
+def orderadmin(user, order_id, items, total):
+    html_message = render_to_string('EMAILADMIN.html', {
+        'user': user,
+        'order_id': order_id,
+        'items': items,
+        'total': total,
+        'customer_name': f"{user.first_name} {user.last_name}",
+        'customer_email': user.email,
+        'customer_phone': user.phone_number,
+        'shipping_address': f"{user.address}, {user.city}, {user.state} {user.zipcode}, {user.country}",
+    })
+
+    plain_message = strip_tags(html_message)
+
+    send_mail(
+        subject=f'New Order: {order_id}',
+        message=plain_message,
+        from_email='solaradeveloper@gmail.com',
+        recipient_list=['solaradeveloper@gmail.com'],
+        html_message=html_message,
+        fail_silently=False,
+    )

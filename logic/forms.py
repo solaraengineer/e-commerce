@@ -17,7 +17,8 @@ class LoginForm(forms.Form):
 class CheckContactForm(forms.Form):
     first_name = forms.CharField(max_length=100)
     last_name = forms.CharField(max_length=100)
-    phone_number = forms.CharField(max_length=15)
+    phone_number = forms.CharField(max_length=250)
+    email = forms.EmailField()
 
 
 class CheckShipping(forms.Form):

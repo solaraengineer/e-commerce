@@ -71,13 +71,14 @@ if (loginForm) {
       if (data.status === 'success') {
         window.location.href = data.redirect;
       } else {
-        // Show error message
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
         errorDiv.style.color = 'red';
         errorDiv.style.marginTop = '10px';
         errorDiv.textContent = data.message;
         loginForm.appendChild(errorDiv);
+
+
       }
     } catch (error) {
       console.error('Login error:', error);

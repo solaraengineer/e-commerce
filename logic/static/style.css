@@ -1,0 +1,10 @@
+:root {
+    --font-family-1: "Heebo", sans-serif;
+    --font-family-2: "Bebas Neue", sans-serif;
+}
+
+
+body{
+    height: 100em;
+    width: 100rem
+}

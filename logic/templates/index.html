@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Store</title>
-    <title>Welcome back {{ user.username }}</title>
+    <title>Welcome back {{ user.username }} - Store</title>
     <style>
         * {
             margin: 0;
@@ -21,6 +20,8 @@
             --light-gray: #F3F4F6;
             --white: #FFFFFF;
             --border: #E5E7EB;
+            --success: #10B981;
+            --error: #EF4444;
         }
 
         body {
@@ -53,6 +54,11 @@
             letter-spacing: -0.5px;
         }
 
+        .logo a {
+            text-decoration: none;
+            color: inherit;
+        }
+
         .nav-menu {
             flex: 1;
         }
@@ -69,6 +75,11 @@
             font-weight: 500;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            border: none;
+            background: none;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
         }
 
         .nav-item:hover {
@@ -98,6 +109,25 @@
             margin-right: 12px;
             font-size: 18px;
             text-align: center;
+        }
+
+        #clear {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--error);
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #clear:hover {
+            background: #DC2626;
+            transform: translateY(-2px);
         }
 
         /* Main Content */
@@ -161,6 +191,7 @@
             transition: all 0.2s;
             position: relative;
             font-size: 20px;
+            text-decoration: none;
         }
 
         .icon-button:hover {
@@ -196,6 +227,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s;
+            text-transform: uppercase;
         }
 
         .user-avatar:hover {
@@ -207,10 +239,36 @@
             padding: 48px;
         }
 
+        /* Messages */
+        .messages {
+            margin-bottom: 32px;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .alert-success {
+            background: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #10B981;
+        }
+
+        .alert-error {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #EF4444;
+        }
+
         /* Stats Cards */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 24px;
             margin-bottom: 48px;
         }
@@ -241,18 +299,7 @@
             font-size: 32px;
             font-weight: 700;
             color: var(--deep-black);
-            margin-bottom: 8px;
             letter-spacing: -1px;
-        }
-
-        .stat-change {
-            font-size: 13px;
-            color: #10B981;
-            font-weight: 500;
-        }
-
-        .stat-change.negative {
-            color: #EF4444;
         }
 
         /* Products Section */
@@ -389,7 +436,7 @@
 
         .table-header {
             display: grid;
-            grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+            grid-template-columns: 1fr 2fr 1fr 1fr;
             padding: 20px 24px;
             background: var(--light-gray);
             font-size: 13px;
@@ -401,7 +448,7 @@
 
         .table-row {
             display: grid;
-            grid-template-columns: 1fr 2fr 1fr 1fr 1fr;
+            grid-template-columns: 1fr 2fr 1fr 1fr;
             padding: 24px;
             border-bottom: 1px solid var(--border);
             align-items: center;
@@ -416,49 +463,16 @@
             border-bottom: none;
         }
 
-        .order-id {
-            font-weight: 600;
-            color: var(--deep-black);
-        }
-
-        .order-items {
+        .empty-state {
+            padding: 60px 24px;
+            text-align: center;
             color: var(--gray);
-            font-size: 14px;
         }
 
-        .order-total {
-            font-weight: 600;
-            color: var(--deep-black);
-        }
-
-        .order-status {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .status-delivered {
-            background: #D1FAE5;
-            color: #065F46;
-        }
-
-        .status-processing {
-            background: #FEF3C7;
-            color: #92400E;
-        }
-
-        .status-shipped {
-            background: #DBEAFE;
-            color: #1E40AF;
-        }
-
-        .order-date {
-            color: var(--gray);
-            font-size: 14px;
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
         }
 
         /* Floating Action */
@@ -505,7 +519,6 @@
         .stat-card:nth-child(1) { animation-delay: 0.1s; }
         .stat-card:nth-child(2) { animation-delay: 0.2s; }
         .stat-card:nth-child(3) { animation-delay: 0.3s; }
-        .stat-card:nth-child(4) { animation-delay: 0.4s; }
 
         .product-card {
             animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
@@ -521,10 +534,10 @@
 <body>
     <!-- Sidebar -->
     <aside class="sidebar">
-        <div class="logo"> <a href="/home">Store.</a></div>
+        <div class="logo"><a href="/home">Store.</a></div>
 
         <nav class="nav-menu">
-            <a href="#" class="nav-item active">
+            <a href="/home" class="nav-item active">
                 <span class="nav-icon">⊞</span>
                 Dashboard
             </a>
@@ -532,7 +545,7 @@
                 <span class="nav-icon">📦</span>
                 Products
             </a>
-            <a href="#" class="nav-item">
+            <a href="/checkout" class="nav-item">
                 <span class="nav-icon">🛒</span>
                 Cart
             </a>
@@ -544,16 +557,16 @@
                 <span class="nav-icon">⚙️</span>
                 Settings
             </a>
-                    <button id="clear">Clear cart</button>
+            <button type="button" id="clear">Clear Cart</button>
         </nav>
-           <form
-                   {% csrf_token %}
-                action="/logout/" method="POST" style="margin-top: auto;">
-    <button type="submit" class="nav-item" style="all: unset; cursor: pointer;">
-        <span class="nav-icon">→</span>
-        Logout
-    </button>
-          </form>
+
+        <form action="/logout" method="POST" style="margin-top: auto;">
+            {% csrf_token %}
+            <button type="submit" class="nav-item">
+                <span class="nav-icon">→</span>
+                Logout
+            </button>
+        </form>
     </aside>
 
     <!-- Main Content -->
@@ -568,16 +581,31 @@
                 <div class="icon-button">
                     🔔
                 </div>
-                <div class="icon-button">
-                    <a href="/checkout">🛒</a>
-                    <span class="cart-badge">3</span>
-                </div>
-                <div class="user-avatar">U</div>
+                <a href="/checkout" class="icon-button">
+                    🛒
+                    <span class="cart-badge">   </span>
+                </a>
+            {% if user.is_authenticated %}
+                <div class="user-avatar">{{ user.username|first }}</div>
+            {% else %}
+                <div class="user-avatar">Welcome G</div>
+            {% endif %}
             </div>
         </header>
 
         <!-- Content -->
         <div class="content">
+            <!-- Messages -->
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
@@ -586,7 +614,11 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Orders</div>
-                    <div class="stat-value">24</div>
+                    <div class="stat-value">{{ orders|length }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Username</div>
+                    <div class="stat-value" style="font-size: 24px;">{{ user.username }}</div>
                 </div>
             </div>
 
@@ -635,7 +667,6 @@
                 </div>
             </section>
 
-
             <!-- Recent Orders -->
             <section class="orders-section">
                 <div class="section-header">
@@ -644,100 +675,47 @@
                         View all →
                     </a>
                 </div>
-                <a href="/login">login</a>
 
                 <div class="orders-table">
-    <div class="table-header">
-        <div>Order ID</div>
-        <div>Items</div>
-        <div>Total</div>
-        <div>Date</div>
-    </div>
+                    <div class="table-header">
+                        <div>Order ID</div>
+                        <div>Items</div>
+                        <div>Total</div>
+                        <div>Date</div>
+                    </div>
 
-    {% for order in orders %}
-    <div class="table-row">
-        <div>{{ order.order_id }}</div>
-        <div>{{ order.item }}</div>
-        <div>{{ order.total }}</div>
-        <div>{{ order.date }}</div>
-    </div>
-    {% endfor %}
-</div>
+                    {% if orders %}
+                        {% for order in orders %}
+                        <div class="table-row">
+                            <div>{{ order.order_id }}</div>
+                            <div>{{ order.item }}</div>
+                            <div>${{ order.total }}</div>
+                            <div>{{ order.date|date:"M d, Y" }}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p>No orders yet</p>
+                        </div>
+                    {% endif %}
+                </div>
             </section>
         </div>
     </main>
 
-    1
     <div class="floating-chat">
         💬
     </div>
-</body>
-<script>
-document.querySelectorAll(".add-to-cart").forEach(button => {
-  button.addEventListener("click", () => {
-    const productId = button.id;
-    const price = parseFloat(
-      document.getElementById(`price-${productId}`).textContent.replace("$", "")
-    );
 
-    fetch("/api/addcart/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      },
-      body: JSON.stringify({
-        product: productId,
-        price: price,
-      }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        console.log("POST response:", data);
-      })
-      .catch(err => console.error("Error:", err));
-  });
-});
-
-
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== "") {
-    const cookies = document.cookie.split(";");
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + "=")) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
-document.addEventListener("DOMContentLoaded", () => {
-    const clearBtn = document.getElementById("clear");
-
-    clearBtn.addEventListener("click", () => {
-        fetch('/api/cleancart/', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-        })
-        .then(res => res.json())
-        .then(data => {
-            console.log(data.message);
-        })
-        .catch(err => console.error("Error:", err));
-    });
-
+    <script>
     function getCookie(name) {
         let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
             for (let i = 0; i < cookies.length; i++) {
                 const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                if (cookie.substring(0, name.length + 1) === (name + "=")) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
                 }
@@ -745,6 +723,57 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         return cookieValue;
     }
-});
-</script>
+
+    // Add to cart
+    document.querySelectorAll(".add-to-cart").forEach(button => {
+        button.addEventListener("click", () => {
+            const productId = button.id;
+            const price = parseFloat(
+                document.getElementById(`price-${productId}`).textContent.replace("$", "")
+            );
+
+            fetch("/api/addcart/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: JSON.stringify({
+                    product: productId,
+                    price: price,
+                }),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    button.textContent = "Added!";
+                    button.style.background = "#10B981";
+                    setTimeout(() => {
+                        button.textContent = "Add to Cart";
+                        button.style.background = "";
+                    }, 2000);
+                }
+            })
+            .catch(err => console.error("Error:", err));
+        });
+    });
+
+    // Clear cart
+    document.getElementById("clear").addEventListener("click", () => {
+        if (confirm("Are you sure you want to clear your cart?")) {
+            fetch('/api/cleancart/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+            })
+            .catch(err => console.error("Error:", err));
+        }
+    });
+    </script>
+</body>
 </html>

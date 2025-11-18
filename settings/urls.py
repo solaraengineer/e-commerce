@@ -12,14 +12,15 @@ urlpatterns = [
     # Pages
     path('', views.home, name='home'),
     path('reg', views.reg, name='reg'),
-    path('login', views.loginn, name='login'),
+    path('login', views.login, name='login'),
     path('checkout/', views.checkout, name='checkout'),
     path('conf/', views.conf, name='conf'),
     path('settings', views.settings, name='settings'),
+    path('delacc', views.delacc, name='delacc'),
 
     # Auth
     path('register', views.register, name='register'),
-    path('logout/', views.logout_view, name='logout'),
+    path('logout', views.logout_view, name='logout'),
 
     # Cart APIs
     path('api/addcart/', views.addcart, name='addcart'),
