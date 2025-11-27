@@ -1,15 +1,17 @@
-
-from email import message
 from django.contrib import messages, auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.messages.storage import session
 from django.shortcuts import render, redirect
 import traceback
+import requests
+import traceback
+import os
 from django.views.decorators.csrf import csrf_exempt
 from django_ratelimit.decorators import ratelimit
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
+import secrets
 import json
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -17,13 +19,28 @@ from django.utils.html import strip_tags
 import random
 import string
 from collections import Counter
-
+import jwt
+from datetime import datetime, timedelta
 from logic.forms import RegisterForm, LoginForm, CheckContactForm, CheckShipping, UpdateDataForm
 from logic.models import User, CartItem, Orders
+import redis
 
 
-def conf(request):
-    return render(request, 'conf.html')
+try:
+    r = redis.Redis(host='127.0.0.1', port=6379, db=0)
+    r.ping()
+except redis.ConnectionError:
+    print("WARNING: Redis not available, rate limiting disabled")
+    r = None
+
+
+def generate_jwt_token():
+    payload = {
+        'service': 'ecommerce',
+        'exp': datetime.utcnow() + timedelta(minutes=15)
+    }
+    token = jwt.encode(payload, os.getenv('JWT_SECRET'), algorithm='HS256')
+    return token
 
 
 @login_required(login_url='login')
@@ -105,6 +122,8 @@ def delone(request, id):
             'message': 'Failed to delete item'
         }, status=500)
 
+
+@csrf_exempt
 @login_required(login_url='login')
 def buy(request):
     cart = CartItem.objects.filter(user=request.user).select_related('user')
@@ -129,8 +148,55 @@ def buy(request):
     if request.method == 'POST':
         contact_form = CheckContactForm(request.POST)
         shipping_form = CheckShipping(request.POST)
+        card_number = request.POST.get('Card')
+        HoldName = request.POST.get('HoldName')
+        CVV = request.POST.get('CVV')
+
+        if not card_number or not HoldName or not CVV:
+            messages.error(request, 'All payment data is required')
+            return redirect('checkout')
 
         if contact_form.is_valid() and shipping_form.is_valid():
+            try:
+                token = generate_jwt_token()
+                cart_total = sum(float(c.price) for c in cart)
+
+                bank_response = requests.post(
+                    'http://localhost:8001/api/verify',
+                    json={
+                        'card_number': card_number,
+                        'HoldName': HoldName,
+                        'CVV': CVV,
+                        'cart_total': cart_total,
+                    },
+                    headers={'Authorization': f'Bearer {token}'},
+                    timeout=5
+                )
+
+                if bank_response.status_code == 200:
+                    bank_data = bank_response.json()
+                    if not bank_data.get('success'):
+                        messages.error(request, bank_data.get('error', 'Payment failed'))
+                        return redirect('checkout')
+                    request.session['last_card_used'] = card_number
+
+                elif bank_response.status_code == 400:
+                    bank_data = bank_response.json()
+                    messages.error(request, bank_data.get('error', 'Insufficient funds'))
+                    return redirect('checkout')
+                elif bank_response.status_code == 404:
+                    messages.error(request, 'Invalid payment data')
+                    return redirect('checkout')
+                else:
+                    messages.error(request, 'Bank service unavailable')
+                    return redirect('checkout')
+
+            except requests.RequestException as e:
+                messages.error(request, 'Could not connect to bank')
+                return redirect('checkout')
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
             try:
                 with transaction.atomic():
                     contact_data = contact_form.cleaned_data
@@ -141,7 +207,7 @@ def buy(request):
                     user.last_name = contact_data['last_name']
                     user.email = contact_data['email']
                     user.phone_number = contact_data['phone_number']
-                    user.address = shipping_data['Address']
+                    user.address = shipping_data['address']
                     user.city = shipping_data['city']
                     user.state = shipping_data['state']
                     user.zipcode = shipping_data['zipcode']
@@ -151,12 +217,11 @@ def buy(request):
                     random_id = '#' + ''.join(random.choices(string.ascii_letters + string.digits, k=11))
                     total = sum(float(c.price) for c in cart)
 
-
                     item_counts = Counter([c.item_id for c in cart])
                     items_formatted = ', '.join([f"{item} x{count}" for item, count in item_counts.items()])
 
                     order = Orders.objects.create(
-                        user_id=str(user.id),
+                        user=user,
                         item=items_formatted,
                         total=total,
                         order_id=random_id,
@@ -178,15 +243,16 @@ def buy(request):
 
                     cart.delete()
 
-                return render(request, 'conf.html', {
-                    'random_id': random_id,
-                    'items': [order],
-                    'total': round(total, 2),
-                })
+                    try:
+                        sendhistory(request, random_id)
+                    except Exception as e:
+                        print(f"Failed to send history: {e}")
 
+                return redirect('conf', order_id=random_id)
             except Exception as e:
+                traceback.print_exc()
                 messages.error(request, f'Order failed: {str(e)}')
-                return redirect('checkout')
+                return redirect('home')
         else:
             errors = {}
             if not contact_form.is_valid():
@@ -202,6 +268,53 @@ def buy(request):
             })
 
     return redirect('checkout')
+
+
+def sendhistory(request, order_id):
+    try:
+        order = Orders.objects.get(order_id=order_id, user=request.user)
+        card_number = request.session.get('last_card_used')
+
+        token = generate_jwt_token()
+
+        orders = [{
+            'card_number': card_number,
+            'item': order.item,
+            'status': order.status,
+            'total': str(order.total),
+            'order_id': order.order_id
+        }]
+
+        response = requests.post(
+            'http://localhost:8001/api/gethistory',
+            json={'orders': orders},
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=5
+        )
+
+        return JsonResponse(response.json())
+    except Orders.DoesNotExist:
+        return JsonResponse({'error': 'Order not found'}, status=404)
+    except requests.RequestException as e:
+        print(f"Failed to send history: {e}")
+        return JsonResponse({'error': 'Failed to sync with bank'}, status=500)
+
+
+@login_required(login_url='login')
+def conf(request, order_id):
+    try:
+        order = Orders.objects.get(order_id=order_id, user=request.user)
+        items_list = order.get_items_list()
+
+        return render(request, 'conf.html', {
+            'random_id': order.order_id,
+            'items_list': items_list,
+            'total': order.total,
+            'latest_order': order,
+        })
+    except Orders.DoesNotExist:
+        messages.error(request, 'Order not found')
+        return redirect('home')
 
 
 @login_required(login_url='login')
@@ -237,7 +350,7 @@ def loginn(request):
     })
 
 
-@ratelimit(key='ip', rate='5/m', block=True)
+@ratelimit(key='ip', rate='10/m', block=True)
 def register(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         if request.method == 'POST':
@@ -250,6 +363,17 @@ def register(request):
                     username = cd['username']
                     password = cd['password']
 
+                    if r:
+                        ip = request.META.get("REMOTE_ADDR", "")
+                        redis_key = f"loginfail:{ip}"
+
+                        fails = r.get(redis_key)
+                        if fails and int(fails) >= 200:
+                            return JsonResponse({
+                                'status': 'error',
+                                "message": "Sent too many requests. Try again later."
+                            }, status=429)
+
                     if User.objects.filter(username=username).exists():
                         return JsonResponse({
                             'status': 'error',
@@ -259,6 +383,10 @@ def register(request):
 
                     user = User.objects.create_user(username=username, password=password)
                     auth.login(request, user)
+
+                    if r:
+                        r.delete(redis_key)
+
                     request.session['username'] = username
 
                     return JsonResponse({
@@ -279,12 +407,11 @@ def register(request):
                     'message': 'Invalid JSON data'
                 }, status=400)
             except Exception as e:
-                print(f"REGISTER ERROR: {e}")
+                traceback.print_exc()
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Registration failed',
                 }, status=500)
-
 
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -304,10 +431,10 @@ def register(request):
     return render(request, 'reg.html', {'reg_form': form})
 
 
-@ratelimit(key='ip', rate='5/m', block=True)
+@ratelimit(key='ip', rate='250/m', block=True)
 def login(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-     if request.method == 'POST':
+        if request.method == 'POST':
             try:
                 data = json.loads(request.body)
                 form = LoginForm(data)
@@ -317,21 +444,41 @@ def login(request):
                     username = cd['username']
                     password = cd['password']
 
+                    if r:
+                        ip = request.META.get("REMOTE_ADDR", "")
+                        redis_key = f"loginfail:{ip}"
+
+                        fails = r.get(redis_key)
+                        if fails and int(fails) >= 2:
+                            return JsonResponse({
+                                'status': 'error',
+                                "message": "Too many failed attempts. Try again in 5 minutes."
+                            }, status=429)
+
                     user = User.objects.filter(username=username).first()
 
                     if user and user.check_password(password):
                         auth.login(request, user)
+
+                        if r:
+                            r.delete(redis_key)
+
                         return JsonResponse({
                             'status': 'success',
                             'message': 'Login successful',
                             'redirect': '/'
                         })
                     else:
+                        if r:
+                            r.incr(redis_key)
+                            r.expire(redis_key, 300)
+
                         return JsonResponse({
                             'status': 'error',
                             'message': 'Invalid username or password',
                             'field': 'password'
                         }, status=401)
+
                 else:
                     return JsonResponse({
                         'status': 'error',
@@ -344,23 +491,14 @@ def login(request):
                     'status': 'error',
                     'message': 'Invalid JSON data'
                 }, status=400)
+
             except Exception as e:
                 return JsonResponse({
                     'status': 'error',
-                    'message': 'Login failed'
+                    'message': str(e)
                 }, status=500)
 
-    form = LoginForm
-    if request.method == "POST" and form.is_valid():
-        cd = form.cleaned_data
-        user = User.objects.filter(username=cd['username']).first()
-
-        if user and user.check_password(cd["password"]):
-            auth.login(request, user)
-            return redirect('home')
-
-        messages.error(request, "Invalid credentials", extra_tags="login")
-
+    form = LoginForm()
     return render(request, "login.html", {
         "login_form": form,
     })
@@ -449,17 +587,23 @@ def cleancart(request):
             'message': 'Failed to clear cart'
         }, status=500)
 
+
 @transaction.atomic
 def delacc(request):
     if request.method == 'POST':
-     user = User.objects.filter(username=request.user).first()
-    if user:
-     user.delete()
-    else:
-        return JsonResponse({
-            'status': 'error',
-        })
-    return redirect('login')
+        user = User.objects.filter(username=request.user).first()
+        if user:
+            auth.logout(request)
+            user.delete()
+            messages.success(request, 'Account deleted successfully')
+            return redirect('home')
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'User not found'
+            }, status=404)
+    return redirect('home')
+
 
 @login_required(login_url='login')
 @require_POST
@@ -505,6 +649,7 @@ def validate_checkout(request):
             'message': 'Invalid JSON data'
         }, status=400)
     except Exception as e:
+        print(f"VALIDATE CHECKOUT ERROR: {e}")
         return JsonResponse({
             'status': 'error',
             'message': 'Validation failed'
@@ -512,46 +657,57 @@ def validate_checkout(request):
 
 
 def send_order_confirmation(user, order_id, items, total):
+    try:
+        html_message = render_to_string('EMAILCONF.html', {
+            'user': user,
+            'order_id': order_id,
+            'items': items,
+            'total': total,
+            'site_url': 'https://fwaeh.cloud'
+        })
 
+        plain_message = strip_tags(html_message)
 
-    html_message = render_to_string('EMAILCONF.html', {
-        'user': user,
-        'order_id': order_id,
-        'items': items,
-        'total': total,
-        'site_url': 'https://fwaeh.cloud'
-    })
+        send_mail(
+            subject='Order Confirmation',
+            message=plain_message,
+            from_email='solaradeveloper@gmail.com',
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Failed to send order confirmation email'
+        })
 
-    plain_message = strip_tags(html_message)
-
-    send_mail(
-        subject='Order Confirmation',
-        message=plain_message,
-        from_email='solaradeveloper@gmail.com',
-        recipient_list=[user.email],
-        html_message=html_message,
-        fail_silently=False,
-    )
 
 def orderadmin(user, order_id, items, total):
-    html_message = render_to_string('EMAILADMIN.html', {
-        'user': user,
-        'order_id': order_id,
-        'items': items,
-        'total': total,
-        'customer_name': f"{user.first_name} {user.last_name}",
-        'customer_email': user.email,
-        'customer_phone': user.phone_number,
-        'shipping_address': f"{user.address}, {user.city}, {user.state} {user.zipcode}, {user.country}",
-    })
+    try:
+        html_message = render_to_string('EMAILADMIN.html', {
+            'user': user,
+            'order_id': order_id,
+            'items': items,
+            'total': total,
+            'customer_name': f"{user.first_name} {user.last_name}",
+            'customer_email': user.email,
+            'customer_phone': user.phone_number,
+            'shipping_address': f"{user.address}, {user.city}, {user.state} {user.zipcode}, {user.country}",
+        })
 
-    plain_message = strip_tags(html_message)
+        plain_message = strip_tags(html_message)
 
-    send_mail(
-        subject=f'New Order: {order_id}',
-        message=plain_message,
-        from_email='solaradeveloper@gmail.com',
-        recipient_list=['solaradeveloper@gmail.com'],
-        html_message=html_message,
-        fail_silently=False,
-    )
+        send_mail(
+            subject=f'New Order: {order_id}',
+            message=plain_message,
+            from_email='solaradeveloper@gmail.com',
+            recipient_list=['solaradeveloper@gmail.com'],
+            html_message=html_message,
+            fail_silently=False,
+        )
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Failed to send order confirmation email'
+        })

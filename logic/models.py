@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
@@ -17,8 +18,12 @@ class User(AbstractUser):
 
 
 class Orders(models.Model):
-    user_id = models.CharField(max_length=250, default="")
-    item = models.CharField(max_length=250)  #
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='orders'
+    )
+    item = models.CharField(max_length=250)
     total = models.DecimalField(decimal_places=2, max_digits=10)
     date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=50, default="Paid")
@@ -27,9 +32,6 @@ class Orders(models.Model):
     class Meta:
         ordering = ['-date']
         verbose_name_plural = "Orders"
-
-    def __str__(self):
-        return f"Order {self.order_id}"
 
     def get_items_list(self):
         return [item.strip() for item in self.item.split(',') if item.strip()]

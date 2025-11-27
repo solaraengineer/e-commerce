@@ -23,6 +23,7 @@ urlpatterns = [
     path('logout', views.logout_view, name='logout'),
 
     # Cart APIs
+    path('conf/<str:order_id>/', views.conf, name='conf'),
     path('api/addcart/', views.addcart, name='addcart'),
     path('api/cleancart/', views.cleancart, name='cleancart'),
     path('api/delone/<int:id>/', views.delone, name='delete_cart_item'),

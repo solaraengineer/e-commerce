@@ -206,7 +206,7 @@
             <div class="success-icon">✓</div>
             <h1 class="success-title">Order Confirmed!</h1>
             <p class="success-subtitle">Thank you for your purchase</p>
-            <p class="order-number">Order {{ random_id }}</p>
+            <p class="order-number">Order {{ latest_order.order_id }}</p>
         </div>
 
         <div class="confirmation-card">
@@ -215,22 +215,20 @@
             </div>
 
             <div class="items-list">
-                {% for order in items %}
-                    {% for item_name in order.item.split %}
-                    <div class="order-item">
-                        <div>
-                            <div class="item-name">{{ item_name }}</div>
-                        </div>
-                        <div class="item-price">Included</div>
+                {% for item in items_list %}
+                <div class="order-item">
+                    <div>
+                        <div class="item-name">{{ item }}</div>
                     </div>
-                    {% endfor %}
+                    <div class="item-price">Included</div>
+                </div>
                 {% endfor %}
             </div>
 
             <div class="order-total-section">
                 <div class="final-total">
                     <span class="total-label">Total</span>
-                    <span class="total-value">${{ total }}</span>
+                    <span class="total-value">${{ latest_order.total }}</span>
                 </div>
             </div>
 

@@ -357,7 +357,7 @@
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label class="form-label">Address</label>
-                            {{ checkship_form.Address }}
+                            {{ checkship_form.address }}
                         </div>
                         <div class="form-group full-width">
                             <label class="form-label">Apartment, suite, etc. (optional)</label>
@@ -404,22 +404,31 @@
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label class="form-label">Card Number</label>
-                            <input type="text" placeholder="1234 5678 9012 3456">
+                            <input name="Card"  type="text" placeholder="1234 5678 9012 3456">
                         </div>
                         <div class="form-group full-width">
                             <label class="form-label">Cardholder Name</label>
-                            <input type="text" placeholder="John Doe">
-                        </div>
+                            <input name="HoldName" type="text" placeholder="John Doe">
+                         </div>
                         <div class="form-group">
                             <label class="form-label">Expiry Date</label>
                             <input type="text" placeholder="MM/YY">
                         </div>
                         <div class="form-group">
                             <label class="form-label">CVV</label>
-                            <input type="text" placeholder="123">
+                            <input name="CVV" type="text" placeholder="123">
                         </div>
                     </div>
                 </div>
+                {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
 
             <div class="order-summary">
@@ -487,7 +496,6 @@ function renderCart() {
     .then(res => res.json())
     .then(data => {
         if (data.items && data.items.length > 0) {
-            // Group items by name and count quantity
             const groupedItems = {};
             data.items.forEach(item => {
                 if (!groupedItems[item.name]) {

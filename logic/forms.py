@@ -22,7 +22,7 @@ class CheckContactForm(forms.Form):
 
 
 class CheckShipping(forms.Form):
-    Address = forms.CharField(max_length=250)
+    address = forms.CharField(max_length=250)
     apartment = forms.CharField(max_length=100, required=False)
     city = forms.CharField(max_length=100)
     state = forms.CharField(max_length=100)
